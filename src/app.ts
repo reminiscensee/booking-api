@@ -1,11 +1,10 @@
 import express, { type Application } from "express";
+import healthRouter from './routes/health.router.js'
 
 const app: Application = express();
 
 app.use(express.json());
 
-app.get('/', (req, res) => {
-    res.json({message: 'booking api ready'});
-});
+app.use('/api/v1', healthRouter);
 
 export default app
