@@ -27,10 +27,14 @@ export async function createService(data: CreateServiceInput) {
     return newService
 };
 export async function updateService(id: number, data: UpdateServiceInput) {
-    const keys = Object.keys(data);
-    const setClause = keys.map((key, index) => `${key} = $${index + 1}`).join(', ');
-    const query = `UPDATE services SET ${setClause} WHERE id = $${keys.length + 1} RETURNING *`;
-    const values = [...Object.values(data), id];
+    const keys = ['name', 'price', 'description', 'is_active']
+    const filteredKeys = Object.keys(data).filter((key) => keys.includes(key));
+    if(filteredKeys.length === 0) {
+        throw new AppError('No valid fields to update', 400)
+    }
+    const setClause = filteredKeys.map((key, index) => `${key} = $${index + 1}`).join(', ');
+    const query = `UPDATE services SET ${setClause} WHERE id = $${filteredKeys.length + 1} RETURNING *`;
+    const values = [...filteredKeys.map((key) => (data as Record<string, unknown>)[key]), id];
 
     const result = await pool.query(query, values);
     if(!result.rows[0]) {
