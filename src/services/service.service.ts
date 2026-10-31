@@ -38,7 +38,7 @@ export async function updateService(id: number, data: UpdateServiceInput) {
 
     const result = await pool.query(query, values);
     if(!result.rows[0]) {
-        throw new AppError('Failed to update service', 404)
+        throw new AppError('Service not found', 404)
     }
     return result.rows[0]
 };

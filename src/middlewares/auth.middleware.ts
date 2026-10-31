@@ -5,7 +5,7 @@ import jwt from 'jsonwebtoken'
 
 export async function requireAuth(req: Request, res: Response, next: NextFunction) {
     const bearer = req.headers.authorization;
-    if(!bearer) {
+    if(!bearer?.startsWith('Bearer ')) {
         throw new AppError('Unauthorized', 401);
     }
     const token = bearer.split(' ')[1];
