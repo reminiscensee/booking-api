@@ -2,6 +2,7 @@ import express, { type Application } from "express";
 import healthRouter from './routes/health.router.js'
 import serviceRouter from './routes/service.routes.js'
 import authRouter from './routes/auth.routes.js';
+import slotRouter from './routes/slot.routes.js';
 import { globalError } from "./middlewares/error.middleware.js";
 import { notFoundError } from "./middlewares/not-found.middleware.js";
 
@@ -13,7 +14,9 @@ app.use('/api/v1', healthRouter);
 
 app.use('/api/v1/services', serviceRouter);
 
-app.use('/api/v1/auth', authRouter)
+app.use('/api/v1/auth', authRouter);
+
+app.use('/api/v1/slots', slotRouter);
 
 app.use(notFoundError);
 
