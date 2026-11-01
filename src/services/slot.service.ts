@@ -27,3 +27,10 @@ export async function updateSlot(id: number, data: updateSlotInput) {
     }
     return result.rows[0];
 };
+export async function getAvailableSlots(date: string) {
+    const query = "SELECT * FROM time_slots  WHERE (starts_at AT TIME ZONE 'Europe/Kyiv')::date = $1::date AND is_blocked = false AND starts_at > NOW() AND NOT EXISTS (SELECT 1 FROM  appointments WHERE appointments.slot_id = time_slots.id AND status != 'cancelled') ORDER BY starts_at ASC"
+    const values = [date];
+
+    const result = await pool.query(query, values);
+    return result.rows
+}

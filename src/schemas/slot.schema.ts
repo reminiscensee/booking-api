@@ -11,5 +11,10 @@ export const slotIdSchema = z.object({
     id: z.coerce.number().int().positive()
 })
 
+export const getSlotsQuerySchema = z.object({
+    date: z.string().date()
+})
+
 export type createSlotInput = z.infer<typeof createSlotSchema>;
 export type updateSlotInput = z.infer<typeof updateSlotSchema>;
+export type getSlotsQueryInput = z.infer<typeof getSlotsQuerySchema>;
