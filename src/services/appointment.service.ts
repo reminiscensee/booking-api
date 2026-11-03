@@ -1,9 +1,9 @@
 import { pool } from "../db/pool.js";
 import { AppError } from "../errors/app.error.js";
-import type { createAppointmentInput } from "../schemas/appointment.schema.js";
+import type { createAppointmentInput, getAdminAppointmentsInput } from "../schemas/appointment.schema.js";
 
 export async function createAppointment(data: createAppointmentInput) {
-     const client = await pool.connect();
+    const client = await pool.connect();
     try {
         await client.query('BEGIN');
         const selectedService = await client.query("SELECT * FROM services WHERE id = $1", [data.service_id]);
@@ -41,4 +41,25 @@ export async function createAppointment(data: createAppointmentInput) {
     } finally {
         client.release();
     };
+}
+
+export async function getAppointments(filter: getAdminAppointmentsInput) {
+    const a = `SELECT 
+                    a.id AS id,
+                    a.status,
+                    time_slots.starts_at,
+                    time_slots.ends_at,
+                    services.name AS service_name,
+                    customers.name AS customer_name,
+                    customers.phone AS customer_phone
+                    FROM appointments a
+                    JOIN time_slots ON time_slots.id = a.slot_id
+                    JOIN services ON services.id = a.service_id
+                    JOIN customers ON customers.id = a.customer_id
+                    WHERE (time_slots.starts_at AT TIME ZONE 'Europe/Kyiv')::date = $1::date AND ($2::varchar IS NULL OR a.status = $2)
+                    ORDER BY time_slots.starts_at ASC`
+    const values = [filter.date, filter.status ?? null];
+
+    const result = await pool.query(a, values);
+    return result.rows;
 }
