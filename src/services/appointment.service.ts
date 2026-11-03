@@ -2,6 +2,12 @@ import { pool } from "../db/pool.js";
 import { AppError } from "../errors/app.error.js";
 import type { createAppointmentInput, getAdminAppointmentsInput } from "../schemas/appointment.schema.js";
 
+const ALLOWED_TRANSITIONS: Record<string, string[]> = {
+        pending: ['confirmed', 'cancelled'],
+        confirmed: ['cancelled'],
+        cancelled: [],
+};
+
 export async function createAppointment(data: createAppointmentInput) {
     const client = await pool.connect();
     try {
@@ -62,4 +68,34 @@ export async function getAppointments(filter: getAdminAppointmentsInput) {
 
     const result = await pool.query(a, values);
     return result.rows;
+}
+
+
+
+
+
+
+export async function updateAppointmentStatus(id: number, newStatus: string) {
+    
+    const query = await pool.query("SELECT * FROM appointments WHERE id = $1", [id]);
+
+    const appointment = query.rows[0]
+
+    if (!appointment) {
+        throw new AppError('Appointment not found', 404);
+    };
+    const currentStatus = appointment.status
+    
+    if(currentStatus === newStatus) {
+        return appointment
+    };
+
+    const allowed = ALLOWED_TRANSITIONS[currentStatus] ?? [];
+
+    if(!allowed.includes(newStatus)) {
+        throw new AppError(`Cannot change status from ${currentStatus} to ${newStatus}`, 409);
+    };
+    const updateResult = await pool.query("UPDATE appointments SET status = $1 WHERE id = $2 RETURNING *",[newStatus, id]);
+
+    return updateResult.rows[0];
 }

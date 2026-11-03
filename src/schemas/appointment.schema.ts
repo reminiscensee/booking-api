@@ -13,5 +13,14 @@ export const getAdminAppointmentsQuerySchema = z.object({
     status: z.enum(['pending', 'confirmed', 'cancelled']).optional()
 });
 
+export const updateAppointmentsStatusSchema = z.object({
+    status: z.enum(['pending', 'confirmed', 'cancelled']).optional()
+});
+export const appointmentIdSchema = z.object({
+  id: z.coerce.number().int().positive()
+});
+
+
 export type createAppointmentInput = z.infer<typeof createAppointmentSchema>;
 export type getAdminAppointmentsInput = z.infer<typeof getAdminAppointmentsQuerySchema>;
+export type updateAppointmentsStatusInput = z.infer<typeof updateAppointmentsStatusSchema>;

@@ -1,5 +1,5 @@
 import type { Response, Request, NextFunction } from 'express';
-import { createAppointment, getAppointments } from '../services/appointment.service.js';
+import { createAppointment, getAppointments, updateAppointmentStatus } from '../services/appointment.service.js';
 import type { getAdminAppointmentsInput } from '../schemas/appointment.schema.js';
 
 export async function create(req: Request, res: Response, next: NextFunction) {
@@ -19,4 +19,14 @@ export async function getAll(req: Request, res: Response, next: NextFunction) {
     } catch (e) {
         next(e);
     };
+}
+export async function updateStatus(req: Request, res: Response, next: NextFunction) {
+    try {
+        const id = Number(req.params.id);
+        const body = req.body.status;
+        const updatedAppointment = await updateAppointmentStatus(id, body);
+        res.status(200).json(updatedAppointment)
+    } catch (e) {
+        next(e)
+    }
 }
