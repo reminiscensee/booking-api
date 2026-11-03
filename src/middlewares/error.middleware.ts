@@ -3,7 +3,7 @@ import { AppError } from "../errors/app.error.js";
 const DB_ERRORS: Record<string, string> = {
   uq_time_slots_starts_at: 'Time slot with this start time already exists',
   uq_admin_users_email: 'An administrator with this email already exists',
-  chk_services_price: 'Service price must be a positive number',
+  chk_services_price: 'Service price must be a non-negative number',
   chk_time_slots_duration: 'End time must be after start time',
   fk_appointments_slot: 'Selected time slot does not exist',
   fk_appointments_customer: 'Associated customer does not exist',
