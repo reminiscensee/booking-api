@@ -4,8 +4,9 @@ import type { createAppointmentInput, getAdminAppointmentsInput } from "../schem
 
 const ALLOWED_TRANSITIONS: Record<string, string[]> = {
         pending: ['confirmed', 'cancelled'],
-        confirmed: ['cancelled'],
+        confirmed: ['cancelled', 'completed'],
         cancelled: [],
+        completed: []
 };
 
 export async function createAppointment(data: createAppointmentInput) {
@@ -70,14 +71,9 @@ export async function getAppointments(filter: getAdminAppointmentsInput) {
     return result.rows;
 }
 
-
-
-
-
-
 export async function updateAppointmentStatus(id: number, newStatus: string) {
     
-    const query = await pool.query("SELECT * FROM appointments WHERE id = $1", [id]);
+    const query = await pool.query("SELECT appointments.*, time_slots.starts_at  FROM appointments JOIN time_slots ON time_slots.id = appointments.slot_id WHERE appointments.id = $1", [id]);
 
     const appointment = query.rows[0]
 
@@ -95,6 +91,9 @@ export async function updateAppointmentStatus(id: number, newStatus: string) {
     if(!allowed.includes(newStatus)) {
         throw new AppError(`Cannot change status from ${currentStatus} to ${newStatus}`, 409);
     };
+    if(newStatus === 'completed' && new Date(appointment.starts_at) > new Date()) {
+        throw new AppError('Cannot complete an appointment before its scheduled time', 409)
+    }
     const updateResult = await pool.query("UPDATE appointments SET status = $1 WHERE id = $2 RETURNING *",[newStatus, id]);
 
     return updateResult.rows[0];

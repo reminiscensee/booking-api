@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+const APPOINTMENT_STATUSES = ['pending', 'confirmed', 'cancelled', 'completed'] as const
+
 export const createAppointmentSchema = z.object({
         slot_id: z.number().int().positive(),
         service_id: z.number().int().positive(),
@@ -10,11 +12,11 @@ export const createAppointmentSchema = z.object({
 
 export const getAdminAppointmentsQuerySchema = z.object({
     date: z.string().date(),
-    status: z.enum(['pending', 'confirmed', 'cancelled']).optional()
+    status: z.enum(APPOINTMENT_STATUSES).optional()
 });
 
 export const updateAppointmentsStatusSchema = z.object({
-    status: z.enum(['pending', 'confirmed', 'cancelled']).optional()
+    status: z.enum(APPOINTMENT_STATUSES)
 });
 export const appointmentIdSchema = z.object({
   id: z.coerce.number().int().positive()
