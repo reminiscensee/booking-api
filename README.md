@@ -17,3 +17,7 @@ REST API for appointment booking built with Node.js, Express, TypeScript, and Po
 1. Status transitions follow a strict state machine: `pending` -> `confirmed` -> `completed` (or `cancelled`).
 2. `cancelled` and `completed` are terminal states and cannot be transitioned further.
 3. An appointment can only be marked as `completed` after its scheduled start time has passed.
+
+## Authentication & Security
+
+1. Authentication uses the `Authorization: Bearer <jwt>` header. For the MVP scope, token storage is managed on the client side (in-memory or Web Storage), trading CSRF vulnerability mitigation for a potential XSS attack surface. HttpOnly cookies with SameSite policies and CSRF tokens are deferred beyond the MVP.
