@@ -1,5 +1,5 @@
 import request from 'supertest';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, } from 'vitest';
 import app from '../src/app.js';
 
 describe('GET /api/v1/health', () => {
@@ -27,5 +27,12 @@ describe('POST /api/v1/auth/login', () => {
     it('returns status 400 on invalid credentials payload', async () => {
         const response = await request(app).post('/api/v1/auth/login').send({ email: "not-an-email", password: "123" });
         expect(response.status).toBe(400);
+    });
+});
+describe('POST /api/v1/auth/login', () => {
+    it('returns status 400 on malformed JSON payload', async () => {
+        const response = await request(app).post('/api/v1/auth/login').set('Content-Type', 'application/json').send('{ bad json');
+        expect(response.status).toBe(400);
+        expect(response.body).toEqual({error: 'Invalid JSON payload'});
     });
 });
