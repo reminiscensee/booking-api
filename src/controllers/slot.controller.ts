@@ -1,5 +1,5 @@
 import type { Response, Request, NextFunction } from 'express';
-import { createSlot, getAvailableSlots, updateSlot } from '../services/slot.service.js';
+import { createSlot, getAdminSlots, getAvailableSlots, updateSlot } from '../services/slot.service.js';
 
 export async function create(req: Request, res: Response, next: NextFunction) {
     try {
@@ -27,5 +27,13 @@ export async function getFreeSlots(req: Request, res: Response, next: NextFuncti
     } catch (e) {
         next(e);
     };
-
+}
+export async function getSlotsAdmin(req: Request, res: Response, next: NextFunction) {
+    try {
+        const date = String(req.query.date);
+        const result = await getAdminSlots(date);
+        return res.status(200).json(result);
+    } catch (e) {
+        next(e)
+    };
 }

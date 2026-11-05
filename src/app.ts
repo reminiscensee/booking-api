@@ -5,9 +5,11 @@ import serviceRouter from './routes/service.routes.js'
 import authRouter from './routes/auth.routes.js';
 import slotRouter from './routes/slot.routes.js';
 import appointmentRouter from './routes/appointment.routes.js';
+import adminRouter from './routes/admin.routes.js';
 import { globalError } from "./middlewares/error.middleware.js";
 import { notFoundError } from "./middlewares/not-found.middleware.js";
 import { env } from './config/env.js'
+import { requireAuth } from "./middlewares/auth.middleware.js";
 
 const app: Application = express();
 
@@ -28,6 +30,8 @@ app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/slots', slotRouter);
 
 app.use('/api/v1/appointments', appointmentRouter);
+
+app.use('/api/v1/admin', requireAuth, adminRouter);
 
 app.use(notFoundError);
 

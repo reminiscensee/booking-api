@@ -1,5 +1,5 @@
 import type { Response, Request, NextFunction } from 'express';
-import { findAllActiveServices, updateService, createService, findServiceById } from "../services/service.service.js";
+import { findAllActiveServices, updateService, createService, findServiceById, getAllServicesAdmin } from "../services/service.service.js";
 
 export async function getAll(req: Request, res: Response, next: NextFunction) {
     try {
@@ -35,3 +35,11 @@ export async function update(req: Request, res: Response, next: NextFunction) {
         next(e);
     };
 };
+export async function getAllAdmin(req: Request, res: Response, next: NextFunction) {
+    try {
+        const result = await getAllServicesAdmin();
+        return res.status(200).json(result);
+    } catch (e) {
+        next(e);
+    };
+}

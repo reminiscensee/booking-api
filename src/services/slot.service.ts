@@ -2,8 +2,9 @@ import { pool } from "../db/pool.js";
 import { AppError } from "../errors/app.error.js";
 import type { createSlotInput, updateSlotInput } from "../schemas/slot.schema.js";
 
+const SLOT_DURATION_MINUTES = 30;
+
 export async function createSlot(data: createSlotInput) {
-    const SLOT_DURATION_MINUTES = 30;
     const startsAt = new Date(data.starts_at);
     const endsAt = new Date(startsAt);
     endsAt.setMinutes(endsAt.getMinutes() + SLOT_DURATION_MINUTES);
@@ -33,4 +34,11 @@ export async function getAvailableSlots(date: string) {
 
     const result = await pool.query(query, values);
     return result.rows
-}
+};
+export async function getAdminSlots(date: string) {
+    const query = await pool.query("SELECT time_slots.*,  EXISTS (SELECT 1 FROM appointments WHERE appointments.slot_id = time_slots.id AND appointments.status IN ('pending', 'confirmed')) AS is_booked FROM time_slots WHERE (time_slots.starts_at AT TIME ZONE 'Europe/Kyiv')::date = $1::date ORDER BY time_slots.starts_at ASC", [date]);
+
+    const result = query.rows;
+
+    return result;
+};

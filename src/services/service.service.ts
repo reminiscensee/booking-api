@@ -42,3 +42,10 @@ export async function updateService(id: number, data: UpdateServiceInput) {
     }
     return result.rows[0]
 };
+export async function getAllServicesAdmin() {
+    const query = await pool.query('SELECT * FROM services ORDER BY id ASC');
+
+    const result = query.rows;
+
+    return result;
+};
