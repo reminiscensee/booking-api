@@ -21,3 +21,16 @@ REST API for appointment booking built with Node.js, Express, TypeScript, and Po
 ## Authentication & Security
 
 1. Authentication uses the `Authorization: Bearer <jwt>` header. For the MVP scope, token storage is managed on the client side (in-memory or Web Storage), trading CSRF vulnerability mitigation for a potential XSS attack surface. HttpOnly cookies with SameSite policies and CSRF tokens are deferred beyond the MVP.
+
+## Features & Progress
+
+### 📅 Client Booking Flow & Concurrency Handling
+1. **Slot Filtering & State Decoupling:** Reusable `useFreeSlots` hook managing loading/error states with stale-response protection (`isCurrent` cleanup pattern) and reactive `refetch` capabilities.
+2. **Controlled Booking Form:** Form validation with phone number normalization (`regex`), boundary checks, and optional payload formatting.
+3. **Conflict Resolution (`409 Conflict`):** Intercepts concurrent reservation collisions, notifies the customer, resets outdated slot selections, and automatically refreshes available time slots.
+4. **Booking Confirmation Receipt:** Confirmation view displaying generated booking ID, customer details, selected service, and localized appointment timestamps (`Europe/Kyiv` timezone).
+
+### 🛡️ Admin Panel & Network Infrastructure
+1. **Typed HTTP Errors (`ApiError`):** Custom error class encapsulating HTTP status codes and parsed server messages for predictable client-side error handling.
+2. **Automated Auth Guard & Session Invalidation:** Global `apiClient` interceptor that catches `401 Unauthorized`, clears persisted JWT tokens from `localStorage`, and redirects unauthorized users to `/admin/login`.
+3. **Admin Services Dashboard:** Protected dashboard fetching and presenting active services, price lists, and descriptions with dedicated session termination (`Logout`).
