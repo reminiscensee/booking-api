@@ -18,19 +18,29 @@ REST API for appointment booking built with Node.js, Express, TypeScript, and Po
 2. `cancelled` and `completed` are terminal states and cannot be transitioned further.
 3. An appointment can only be marked as `completed` after its scheduled start time has passed.
 
+
 ## Authentication & Security
 
 1. Authentication uses the `Authorization: Bearer <jwt>` header. For the MVP scope, token storage is managed on the client side (in-memory or Web Storage), trading CSRF vulnerability mitigation for a potential XSS attack surface. HttpOnly cookies with SameSite policies and CSRF tokens are deferred beyond the MVP.
 
-## Features & Progress
+## API Contract
 
-### 📅 Client Booking Flow & Concurrency Handling
-1. **Slot Filtering & State Decoupling:** Reusable `useFreeSlots` hook managing loading/error states with stale-response protection (`isCurrent` cleanup pattern) and reactive `refetch` capabilities.
-2. **Controlled Booking Form:** Form validation with phone number normalization (`regex`), boundary checks, and optional payload formatting.
-3. **Conflict Resolution (`409 Conflict`):** Intercepts concurrent reservation collisions, notifies the customer, resets outdated slot selections, and automatically refreshes available time slots.
-4. **Booking Confirmation Receipt:** Confirmation view displaying generated booking ID, customer details, selected service, and localized appointment timestamps (`Europe/Kyiv` timezone).
+All error responses strictly follow the format:
 
-### 🛡️ Admin Panel & Network Infrastructure
-1. **Typed HTTP Errors (`ApiError`):** Custom error class encapsulating HTTP status codes and parsed server messages for predictable client-side error handling.
-2. **Automated Auth Guard & Session Invalidation:** Global `apiClient` interceptor that catches `401 Unauthorized`, clears persisted JWT tokens from `localStorage`, and redirects unauthorized users to `/admin/login`.
-3. **Admin Services Dashboard:** Protected dashboard fetching and presenting active services, price lists, and descriptions with dedicated session termination (`Logout`).
+```json
+{
+  "error": "Detailed error message"
+}
+```
+
+## Endpoints
+
+| Method | Endpoint | Auth Required | Request Parameters / Body | Response Format | Status Codes |
+|---|---|---|---|---|---|
+| POST | `/api/v1/auth/login` | No | Body: `{ "email": *string*, "password": *string* }` | `{ "token": *string* }` | 200, 400, 401 |
+| GET | `/api/v1/services` | No | None | Array<{ *id*: *number*, *name*: *string*, *description*: *string*, *price*: *number*, *is_active*: *boolean* }> (active only) | 200 |
+| GET | `/api/v1/admin/services` | Yes (Bearer `<token>`) | None | Array<{ *id*: *number*, *name*: *string*, *description*: *string*, *price*: *number*, *is_active*: *boolean* }> (all) | 200, 401 |
+| GET | `/api/v1/slots` | No | Query: `?date=YYYY-MM-DD&service_id=number` | Array<{ *id*: *number*, *starts_at*: *string*, *ends_at*: *string*, *is_available*: *boolean* }> | 200, 400 |
+| POST | `/api/v1/appointments` | No | Body: `{ "slot_id": *number*, "service_id": *number*, "customer_name": *string*, "customer_phone": *string*, "customer_email"*?*: *string* }` | Flat record: `{ "id": *number*, "slot_id": *number*, "customer_id": *number*, "service_id": *number*, "status": "pending", "created_at": *string* }` | 201, 400, 409 |
+| GET | `/api/v1/appointments` | Yes (Bearer `<token>`) | Query: `?date=YYYY-MM-DD` (required), `&status=pending\|confirmed\|completed\|cancelled` (optional) | Array<{ *id*: *number*, *status*: *string*, *starts_at*: *string*, *ends_at*: *string*, *service_name*: *string*, *customer_name*: *string*, *customer_phone*: *string* }> | 200, 400, 401 |
+| PATCH | `/api/v1/appointments/:id` | Yes (Bearer `<token>`) | Params: `:id` Body: `{ "status": "confirmed" *\|* "completed" *\|* "cancelled" }` | Flat record: `{ "id": *number*, "slot_id": *number*, "customer_id": *number*, "service_id": *number*, "status": *string*, "created_at": *string* }` | 200, 400, 401, 404, 409 |
