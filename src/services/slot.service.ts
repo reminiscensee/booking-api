@@ -1,6 +1,6 @@
 import { pool } from "../db/pool.js";
 import { AppError } from "../errors/app.error.js";
-import type { createSlotInput, updateSlotInput } from "../schemas/slot.schema.js";
+import type { createSlotInput, generateSlotsSchemaInput, updateSlotInput } from "../schemas/slot.schema.js";
 
 const SLOT_DURATION_MINUTES = 30;
 
@@ -42,3 +42,21 @@ export async function getAdminSlots(date: string) {
 
     return result;
 };
+export async function generateSlotByAdmin(data: generateSlotsSchemaInput): Promise<number> {
+  const result = await pool.query(
+    `INSERT INTO time_slots (starts_at, ends_at)
+     SELECT
+       (gs AT TIME ZONE 'Europe/Kyiv') AS starts_at,
+       ((gs + interval '30 minutes') AT TIME ZONE 'Europe/Kyiv') AS ends_at
+     FROM generate_series(0, $2::int - 1) AS day_offset
+     CROSS JOIN LATERAL generate_series(
+       ($1::date + day_offset) + $3::time,
+       ($1::date + day_offset) + $4::time - interval '30 minutes',
+       interval '30 minutes'
+     ) AS gs
+     ON CONFLICT (starts_at) DO NOTHING`,
+    [data.start_date, data.days, data.start_time, data.end_time],
+  );
+
+  return result.rowCount ?? 0;
+}
