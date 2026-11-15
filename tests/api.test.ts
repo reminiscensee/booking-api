@@ -1,6 +1,8 @@
 import request from 'supertest';
 import { describe, it, expect, } from 'vitest';
 import app from '../src/app.js';
+import jwt from 'jsonwebtoken'
+import { env } from '../src/config/env.js';
 
 describe('GET /api/v1/health', () => {
     it('returns status 200', async () => {
@@ -36,3 +38,17 @@ describe('POST /api/v1/auth/login', () => {
         expect(response.body).toEqual({error: 'Invalid JSON payload'});
     });
 });
+describe('POST /api/v1/admin/slots/generate', () => {
+    it('returns 401 when token is missing', async () => {
+        const response = await request(app).post('/api/v1/admin/slots/generate')
+        expect(response.status).toBe(401);
+        expect(response.body).toEqual({error: 'Unauthorized'});
+    })
+    it('returns 400 when request body is invalid', async () => {
+        const token = jwt.sign({id: 1}, env.JWT_SECRET);     
+        const response = await request(app).post('/api/v1/admin/slots/generate').set('Authorization', `Bearer ${token}`).send({days: 0, start_time: '10:15'});
+        expect(response.status).toBe(400);
+        expect(response.body).toHaveProperty('error')
+    })
+});
+
