@@ -12,6 +12,52 @@ REST API for appointment booking built with Node.js, Express, TypeScript, and Po
 6. Supports only a single specialist.
 7. Operates strictly within a single time zone (`Europe/Kyiv`).
 8. Slot generation (`POST /api/v1/admin/slots/generate`) creates 30-minute slots for all consecutive days without skipping weekends or filtering past timestamps (idempotency is guaranteed via `ON CONFLICT (starts_at) DO NOTHING`, while past slots are excluded in public `GET /api/v1/slots`).
+9. Admin service management (`POST/PATCH /services`) and single-slot manual blocking (`PATCH /slots/:id`) are supported by the REST API, while their dedicated admin UI controls are deferred beyond the MVP.
+
+## Tech Stack
+
+- **Runtime & Framework:** Node.js, Express, TypeScript
+- **Database:** PostgreSQL (`pg`, raw SQL queries, SQL migrations)
+- **Validation & Auth:** Zod, JSON Web Tokens (`jsonwebtoken`), `bcrypt`
+- **Testing:** Vitest, Supertest
+
+## Local Setup
+
+### 1. Install dependencies
+
+```bash
+pnpm install
+```
+
+### 2. Configure environment variables
+
+Copy `.env.example` to `.env` and configure the required environment variables:
+
+```ini
+PORT=3000
+DATABASE_URL=postgres://user:password@localhost:5432/booking
+JWT_SECRET=your_secret_key
+FRONTEND_URL=http://localhost:5173
+```
+
+### 3. Apply database migrations and seed initial data
+
+Run the SQL migration files from the `migrations/` directory in numerical order (`001` through `005`).
+
+Then, seed the initial services and create an admin user using the scripts defined in `package.json`.
+
+### 4. Run the server and tests
+
+```bash
+# Start development server
+pnpm dev
+
+# Run Vitest + Supertest test suite
+pnpm test
+
+# Compile TypeScript to dist/
+pnpm build
+```
 
 ## Appointment Lifecycle
 
@@ -38,13 +84,19 @@ All error responses strictly follow the format:
 
 | Method | Endpoint | Auth Required | Request Parameters / Body | Response Format | Status Codes |
 |---|---|---|---|---|---|
-| POST | `/api/v1/auth/login` | No | Body: `{ "email": *string*, "password": *string* }` | `{ "token": *string* }` | 200, 400, 401 |
-| GET | `/api/v1/services` | No | None | Array<{ *id*: *number*, *name*: *string*, *description*: *string*, *price*: *number*, *is_active*: *boolean* }> (active only) | 200 |
-| GET | `/api/v1/admin/services` | Yes (Bearer `<token>`) | None | Array<{ *id*: *number*, *name*: *string*, *description*: *string*, *price*: *number*, *is_active*: *boolean* }> (all) | 200, 401 |
-| GET | `/api/v1/slots` | No | Query: `?date=YYYY-MM-DD&service_id=number` | Array<{ *id*: *number*, *starts_at*: *string*, *ends_at*: *string*, *is_available*: *boolean* }> | 200, 400 |
-| POST | `/api/v1/appointments` | No | Body: `{ "slot_id": *number*, "service_id": *number*, "customer_name": *string*, "customer_phone": *string*, "customer_email"*?*: *string* }` | Flat record: `{ "id": *number*, "slot_id": *number*, "customer_id": *number*, "service_id": *number*, "status": "pending", "created_at": *string* }` | 201, 400, 409 |
-| GET | `/api/v1/appointments` | Yes (Bearer `<token>`) | Query: `?date=YYYY-MM-DD` (required), `&status=pending\|confirmed\|completed\|cancelled` (optional) | Array<{ *id*: *number*, *status*: *string*, *starts_at*: *string*, *ends_at*: *string*, *service_name*: *string*, *customer_name*: *string*, *customer_phone*: *string* }> | 200, 400, 401 |
-| PATCH | `/api/v1/appointments/:id` | Yes (Bearer `<token>`) | Params: `:id` Body: `{ "status": "confirmed" *\|* "completed" *\|* "cancelled" }` | Flat record: `{ "id": *number*, "slot_id": *number*, "customer_id": *number*, "service_id": *number*, "status": *string*, "created_at": *string* }` | 200, 400, 401, 404, 409 |
-| GET | `/api/v1/slots` | No | Query: `?date=YYYY-MM-DD` | Array<{ *id*: *number*, *starts_at*: *string*, *ends_at*: *string*, *is_blocked*: *boolean* }> | 200, 400 |
-| POST | `/api/v1/appointments` | No | Body: `{ "slot_id": *number*, "service_id": *number*, "customer_name": *string*, "customer_phone": *string*, "customer_email"*?*: *string*, "notes"*?*: *string* }` | Flat record: `{ "id": *number*, "slot_id": *number*, "customer_id": *number*, "service_id": *number*, "status": "pending", "created_at": *string* }` | 201, 400, 404, 409 |
-| POST | `/api/v1/admin/slots/generate` | Yes (Bearer `<token>`) | Body: `{ "start_date": "YYYY-MM-DD", "days": *number*, "start_time": "HH:MM", "end_time": "HH:MM" }` | `{ "created": *number* }` | 201, 400, 401 |
+| GET | `/api/v1/health` | No | None | `{ "status": "ok" }` | 200 |
+| POST | `/api/v1/auth/login` | No | Body: `{ "email": string, "password": string }` | `{ "token": string }` | 200, 400, 401 |
+| GET | `/api/v1/auth/me` | Yes (Bearer `<token>`) | None | `{ "id": number, "email": string }` | 200, 401 |
+| GET | `/api/v1/services` | No | None | `Array<{ id: number, name: string, description: string \| null, price: number, is_active: boolean }>` (active only) | 200 |
+| GET | `/api/v1/services/:id` | No | Params: `:id` | `{ id: number, name: string, description: string \| null, price: number, is_active: boolean }` | 200, 400, 404 |
+| POST | `/api/v1/services` | Yes (Bearer `<token>`) | Body: `{ "name": string, "description"?: string, "price": number, "is_active"?: boolean }` | `{ id: number, name: string, description: string \| null, price: number, is_active: boolean }` | 201, 400, 401 |
+| PATCH | `/api/v1/services/:id` | Yes (Bearer `<token>`) | Params: `:id` Body: `{ "name"?: string, "description"?: string \| null, "price"?: number, "is_active"?: boolean }` | `{ id: number, name: string, description: string \| null, price: number, is_active: boolean }` | 200, 400, 401, 404 |
+| GET | `/api/v1/admin/services` | Yes (Bearer `<token>`) | None | `Array<{ id: number, name: string, description: string \| null, price: number, is_active: boolean }>` (all) | 200, 401 |
+| GET | `/api/v1/slots` | No | Query: `?date=YYYY-MM-DD` | `Array<{ id: number, starts_at: string, ends_at: string, is_blocked: boolean }>` | 200, 400 |
+| POST | `/api/v1/slots` | Yes (Bearer `<token>`) | Body: `{ "starts_at": string, "ends_at": string }` | `{ id: number, starts_at: string, ends_at: string, is_blocked: boolean }` | 201, 400, 401, 409 |
+| PATCH | `/api/v1/slots/:id` | Yes (Bearer `<token>`) | Params: `:id` Body: `{ "is_blocked": boolean }` | `{ id: number, starts_at: string, ends_at: string, is_blocked: boolean }` | 200, 400, 401, 404, 409 |
+| GET | `/api/v1/admin/slots` | Yes (Bearer `<token>`) | Query: `?date=YYYY-MM-DD` | `Array<{ id: number, starts_at: string, ends_at: string, is_blocked: boolean, is_booked: boolean }>` | 200, 400, 401 |
+| POST | `/api/v1/admin/slots/generate` | Yes (Bearer `<token>`) | Body: `{ "start_date": "YYYY-MM-DD", "days": number, "start_time": "HH:MM", "end_time": "HH:MM" }` | `{ "created": number }` | 201, 400, 401 |
+| POST | `/api/v1/appointments` | No | Body: `{ "slot_id": number, "service_id": number, "customer_name": string, "customer_phone": string, "customer_email"?: string, "notes"?: string }` | `{ id: number, slot_id: number, customer_id: number, service_id: number, status: "pending", created_at: string }` | 201, 400, 404, 409 |
+| GET | `/api/v1/appointments` | Yes (Bearer `<token>`) | Query: `?date=YYYY-MM-DD` (required), `&status=pending\|confirmed\|completed\|cancelled` (optional) | `Array<{ id: number, status: string, starts_at: string, ends_at: string, service_name: string, customer_name: string, customer_phone: string }>` | 200, 400, 401 |
+| PATCH | `/api/v1/appointments/:id` | Yes (Bearer `<token>`) | Params: `:id` Body: `{ "status": "confirmed" \| "completed" \| "cancelled" }` | `{ id: number, slot_id: number, customer_id: number, service_id: number, status: string, created_at: string }` | 200, 400, 401, 404, 409 |
