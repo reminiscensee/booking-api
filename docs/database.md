@@ -3,7 +3,7 @@
 ## Architectural Decisions
 
 1. **Partial Unique Index on Appointments:**
-   - **Decision:** `CREATE UNIQUE INDEX unique_active_appointment_slot ON appointments (slot_id) WHERE status IN ('pending', 'confirmed');`
+   - **Decision:** `CREATE UNIQUE INDEX uq_appointments_active_slot ON appointments (slot_id) WHERE status IN ('pending', 'confirmed');`
    - **Why:** Prevents double booking on active records while allowing cancelled appointments to remain in history and freeing the slot for new clients.
 
 2. **Service Deactivation instead of Hard Delete:**
